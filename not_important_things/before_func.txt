@@ -1,0 +1,25 @@
+mul_full = np.dot(fc_3_result, fc_4_w)
+        mul = np.dot(fc_3_result, fc_4_w[:,7])
+        # print_('fc_3_result.shape')
+        # print_('np.array([fc_4_w[:,7]]).shape')
+        mul_member = fc_3_result * np.array([fc_4_w[:,7]])
+        mul_member = mul_member[0,:]
+        sorted_index = np.argsort(mul_member)[::-1]
+        sum_1 = 0
+        sum_2 = 0
+        check_point = 0
+        for i in list(mul_member[sorted_index]):
+            if i > 0:
+                sum_1 += i
+        for index, i in enumerate(list(mul_member[sorted_index])):
+            if i > 0:
+                sum_2 += i
+                if sum_2 / sum_1 > 0.9:
+                    check_point = index
+                    break
+        print_('sum_1')
+        print_('sum_2')                
+        print_('check_point')
+        activated_node = sorted_index[np.array(range(check_point))]
+        activated_node_ascend_sorted = np.sort(activated_node)
+        print_('activated_node_ascend_sorted')
