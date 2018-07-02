@@ -108,7 +108,8 @@ def build_cnn(norm, lamb):
     h1_pool = tf.nn.max_pool(h1, 
                              ksize=[1, 2, 2, 1],
                              strides=[1, 2, 2, 1], 
-                             padding='SAME')
+                             padding='SAME',
+                             name='h1_pool')
     ## 2n layer: Conv_2
     print('\nBuilding 2nd layer: ')
     h2 = conv_layer(h1_pool, name='conv_2', 
@@ -337,10 +338,11 @@ with tf.Session(graph=g2) as sess:
     if return_proba:
         preds = sess.run('probabilities:0', feed_dict=feed)
     else:
-        conv_2_result, fc_3_w, h2_pool, fc_3_b, fc_4_w, fc_3_result, fc_4_b, fc_4_result, preds = \
-        sess.run(['conv_2/activation:0', 'fc_3/_weights:0', 'h2_pool:0', 'fc_3/_biases:0', 'fc_4/_weights:0', 'fc_3/activation:0', 'fc_4/_biases:0', 'fc_4/net_pre-activation:0','labels:0'], feed_dict=feed)
+        result_of_h1_pool, Conv2Kernel, conv_2_result, fc_3_w, h2_pool, fc_3_b, fc_4_w, fc_3_result, fc_4_b, fc_4_result, preds = \
+        sess.run(['h1_pool:0', 'conv_2/_weights:0', 'conv_2/activation:0', 'fc_3/_weights:0', 'h2_pool:0', 'fc_3/_biases:0', 'fc_4/_weights:0', 'fc_3/activation:0', 'fc_4/_biases:0', 'fc_4/net_pre-activation:0','labels:0'], feed_dict=feed)
         # preds = sess.run('labels:0', feed_dict=feed)
 
+    # print_('Conv2Kernel.shape')
     # z = input('pass 10 ?')
 
     img = np.resize(X_test_img * 1/255, (28,28))
@@ -395,10 +397,10 @@ with tf.Session(graph=g2) as sess:
 
 
     def activated_nodes(input_node, weights, range=0.5):
-        mul = np.dot(input_node, weights)
+        # mul = np.dot(input_node, weights)
         # print_('fc_3_result.shape')
         # print_('np.array([fc_4_w[:,7]]).shape')
-        mul_member = input_node * np.array([weights])
+        mul_member = input_node * weights
         mul_member = mul_member[0,:]
         sorted_index = np.argsort(mul_member)[::-1]
         sum_1 = 0
@@ -419,77 +421,52 @@ with tf.Session(graph=g2) as sess:
         nodes = sorted_index[np.arange(check_point)]
         return nodes
     
-    # def show(all_nodes, activated_nodes):
-    #     '''Show h2 pooling layer's activated pixel'''
-    #     fig, ax_act_h2_pool_1 = plt.subplots(nrows=8, ncols=8, figsize=(4, 4))
-    #     channels = activated_nodes%(64*4)%64
-    #     for i in range(64):
-    #         h2_pool_tmp = np.array(all_nodes[0,:,:,i])
-    #         pool_img = np.stack([h2_pool_tmp, h2_pool_tmp, h2_pool_tmp], axis=2)
 
 
-    #         '''Make activated pixel red'''        
-    #         for index, which_channel in enumerate(channels):
-    #             if which_channel == i:
-    #                 row = int(activated_nodes[index]%(64*4)/64)
-    #                 # row = int(activated_node_h2_pool_1[index]%16/4)
-    #                 column = int(activated_nodes[index]/(64*4))
-    #                 # column = (activated_node_h2_pool_1[index]%16)%4
-    #                 print_('row')
-    #                 print_('column')
-    #                 pool_img[row, column, 0] = 1
-    #                 pool_img[row, column, 1] = 0
-    #                 pool_img[row, column, 2] = 0
+    PixelsToBeRedFc3 = activated_nodes(fc_3_result, np.array([fc_4_w[:,7]]))
+    # print_('activated_node_fc_3')
 
-    #         ax_act_h2_pool_1[int(i/8), int(i%8)].imshow(pool_img)
 
-    #     plt.show()
-
-    activated_node_fc_3 = activated_nodes(fc_3_result, fc_4_w[:,7])
-    print_('activated_node_fc_3')
-
-    plot_or_not = True
+    '''============================h2_pool <- fc3============================'''
+    '''input : h2_pool(1x4x4x64), PixelsToBeRedFc3(1,78), fc_3_w(1024x1024)'''
     activated_node_h2_pool_all = np.array([[]])
-
+    h2_pool_resize = np.resize(h2_pool[0,:,:,:], (1,1024))
 
     for num in range(0, 78):
-        
-        # z = input('pass 12 ?')
-
-        h2_pool_resize = np.resize(h2_pool[0,:,:,:], (1,1024))
-
         activated_node_h2_pool = \
             activated_nodes(h2_pool_resize, fc_3_w[:,activated_node_fc_3[num]]) ####
-
         activated_node_h2_pool_all = np.c_[activated_node_h2_pool_all, [activated_node_h2_pool]]
 
-    activated_node_h2_pool_all = np.unique(activated_node_h2_pool_all)
-    print_('activated_node_h2_pool_all')
+    del fc_3_w, h2_pool, fc_3_b, fc_4_w, fc_3_result, fc_4_b, fc_4_result, preds
 
+    activated_node_h2_pool_all = np.unique(activated_node_h2_pool_all)
 
     column = np.array(activated_node_h2_pool_all/(64*4), dtype="i")
     row = np.array(activated_node_h2_pool_all%(64*4)/64, dtype="i")
     channels = np.array(activated_node_h2_pool_all%(64*4)%64, dtype="i")
 
-    print_('column')
-    print_('row')
-    print_('channels')
-    activated_node_h2_pool_all_3d = np.stack([column, row, channels], axis=1)
-    print_('activated_node_h2_pool_all_3d')
-    print_('activated_node_h2_pool_all_3d.shape')
-    print_('activated_node_h2_pool_all_3d[:,2]')
+    PixelsToBeRedH2pool = np.stack([column, row, channels], axis=1)
+    '''output : PixelsToBeRedH2pool(All red pixels' coord and channel)'''
+    '''======================================================================='''
 
-    fig, ax_conv2 = plt.subplots(nrows=8, ncols=8, figsize=(15, 15))
-    fig.tight_layout()
 
+
+
+    '''=======================conv2 <- h2_pool(unpooling)========================='''
+    '''input : PixelsToBeRedH2pool, conv_2_result, '''
+    '''PixelsToBeRedH2pool contains all coords of red pixels in 4x4 channels'''
+    # fig, ax_conv2 = plt.subplots(nrows=8, ncols=8, figsize=(15, 15))
+    # fig.tight_layout()
+    PixelsToBeRedConv2 = np.array([[]], dtype="i")
+    
     for i in range(64):
         conv2_tmp = np.array(conv_2_result[0,:,:,i])
-        conv2_img = np.stack([conv2_tmp, conv2_tmp, conv2_tmp], axis=2)
-
-        for index, channel in enumerate(activated_node_h2_pool_all_3d[:,2]):
+        # conv2_img = np.stack([conv2_tmp, conv2_tmp, conv2_tmp], axis=2)
+        
+        for index, channel in enumerate(PixelsToBeRedH2pool[:,2]):
             if channel == i:
-                column = activated_node_h2_pool_all_3d[index,0]
-                row = activated_node_h2_pool_all_3d[index,1]
+                column = int(PixelsToBeRedH2pool[index,0])
+                row = int(PixelsToBeRedH2pool[index,1])
 
                 pixel_4x4 = [float(conv2_tmp[2*column, 2*row]), \
                             float(conv2_tmp[2*column+1, 2*row]), \
@@ -501,39 +478,108 @@ with tf.Session(graph=g2) as sess:
                 if maximum_index == 0:
                     column = 2*column
                     row = 2*row
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
+                    # conv2_img[column, row, 0] = 1
+                    # conv2_img[column, row, 1] = 0
+                    # conv2_img[column, row, 2] = 0
                 elif maximum_index == 1:
                     column = 2*column+1
                     row = 2*row
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
+                    # conv2_img[column, row, 0] = 1
+                    # conv2_img[column, row, 1] = 0
+                    # conv2_img[column, row, 2] = 0
                 elif maximum_index == 2:
                     column = 2*column
                     row = 2*row+1
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
+                    # conv2_img[column, row, 0] = 1
+                    # conv2_img[column, row, 1] = 0
+                    # conv2_img[column, row, 2] = 0
                 elif maximum_index == 3:
                     column = 2*column+1
                     row = 2*row+1
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
+                    # conv2_img[column, row, 0] = 1
+                    # conv2_img[column, row, 1] = 0
+                    # conv2_img[column, row, 2] = 0
 
-        ax_conv2[int(i/8), int(i%8)].imshow(conv2_img)
-        # save the red points here
+                print_('PixelsToBeRedConv2.shape')
+                print_('np.array([[column, row, channel]]).shape')
+                PixelsToBeRedConv2 = np.c_[PixelsToBeRedConv2, [[column, row, channel]]]
+                
+             
+        # ax_conv2[int(i/8), int(i%8)].imshow(conv2_img)
+    PixelsToBeRedConv2 = np.resize(PixelsToBeRedConv2,(int(PixelsToBeRedConv2.shape[1]/3), 3))
+    print_('PixelsToBeRedConv2')
 
     # plt.show()
-    filename = 'conv2_result .png'
-    print(filename, ' saved')
-    plt.savefig(filename)            
+    # filename = 'conv2_result .png'
+    # print(filename, ' saved')
+    # plt.savefig(filename)     
     
+    '''output : showing an image, PixelsToBeRedConv2(All red pixel's coord and channel)'''     
+    '''================================================================================'''
+
+
+
+
+
+
+
+    # plt.figure(0)
+    # plt.tight_layout()
+
+    '''===================================h1_pool <- conv2===================================='''
+    '''input : result_of_h1_pool, Conv2Kernel(5x5x32x64), PixelsToBeRedConv2(column, row, channel)'''
+    PixelsToBeRedH1pool = np.array([[]])
+
+    AllChannelsFromH1pool = result_of_h1_pool[0,:,:,:]
+    for i in range(64): 
+        for index, channel in enumerate(np.array(PixelsToBeRedConv2[:,2], dtype="i")):
+            if channel == i:
+                StartPointOfCutting5x5 = PixelsToBeRedConv2[index,:]
+                Pixel5x5x32ValuefromH1pool = AllChannelsFromH1pool[StartPointOfCutting5x5[0]:StartPointOfCutting5x5[0]+4,\
+                                                                  StartPointOfCutting5x5[1]:StartPointOfCutting5x5[1]+4, :]
+                Kernel5x5x32Value = Conv2Kernel[:,:,:,i]
+                
+                Pixel1x800ValuefromH1pool = np.resize(Pixel5x5x32ValuefromH1pool, (1,800))
+                Kernel1x800Value = np.resize(Kernel5x5x32Value, (1,800))
+                
+                RedPixelsPoints1x800FromH1pool = activated_nodes(Pixel1x800ValuefromH1pool, Kernel1x800Value, range=0.5)
+                # print_('RedPixelsPoints1x800FromH1pool.shape')
+                for RedPixelPoint1x800 in RedPixelsPoints1x800FromH1pool:
+                    # print_('StartPointOfCutting5x5[0]')
+                    # RedPixelPointcolumn = StartPointOfCutting5x5[0]+RedPixelPoint1x25%5
+                    # RedPixelPointrow = StartPointOfCutting5x5[1]+int(RedPixelPoint1x25/5)
+                    RedPixelPointcolumn = StartPointOfCutting5x5[0]+int(RedPixelPoint1x800/(32*5))
+                    RedPixelPointrow = StartPointOfCutting5x5[1]+int(RedPixelPoint1x800%(32*5)/32)
+                    RedPixelPointChannel = RedPixelPoint1x800%(32*5)%32
+                    PixelsToBeRedH1pool = np.c_[PixelsToBeRedH1pool, \
+                                    [[RedPixelPointcolumn,RedPixelPointrow,RedPixelPointChannel]]]
+    # print_('PixelsToBeRed.shape[1]')
+    PixelsToBeRedH1pool = np.resize(PixelsToBeRedH1pool, (int(PixelsToBeRedH1pool.shape[1]/3),3))
+    print_('PixelsToBeRedH1pool')
+
+    fig, ax_h1_pool = plt.subplots(nrows=4, ncols=8, figsize=(5, 5))
+    # fig.tight_layout()
+
+    for i in range(32):
+        OneChannelFromH1pool =  AllChannelsFromH1pool[:,:,i]    
+        h1_img = np.stack([OneChannelFromH1pool, OneChannelFromH1pool, OneChannelFromH1pool], axis=2)
+        for index, channel in enumerate(np.array(PixelsToBeRedH1pool[:,2], dtype="i")):
+            if channel == i:
+                OnePixelToBeRed = np.array(PixelsToBeRedH1pool[index], dtype="i")
+                h1_img[OnePixelToBeRed[0], OnePixelToBeRed[1],0] = 1
+                h1_img[OnePixelToBeRed[0], OnePixelToBeRed[1],1] = 0
+                h1_img[OnePixelToBeRed[0], OnePixelToBeRed[1],2] = 0
         
+        ax_h1_pool[int(i/8), int(i%8)].imshow(h1_img)
 
+    # plt.imshow(h1_img)
+    plt.show()
+    # filename = 'h1_pool_result_act .png'
+    # print(filename, ' saved')
+    # plt.savefig(filename)     
 
+    '''output : showing images, PixelsToBeRedH1pool(All red pixel's coord and channel)'''
+    '''=================================================================================='''
 
 
 

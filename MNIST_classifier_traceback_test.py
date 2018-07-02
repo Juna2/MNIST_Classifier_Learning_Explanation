@@ -393,7 +393,8 @@ with tf.Session(graph=g2) as sess:
     # print_('activated_node')
 
 
-
+    '''input: input_node(type:np.array, doesn't matter if it's sorted), 
+    weights(doesn't matter if it's sorted) | output: column(or row)(of input_node) number of activated nodes'''
     def activated_nodes(input_node, weights, range=0.5):
         mul = np.dot(input_node, weights)
         # print_('fc_3_result.shape')

@@ -277,14 +277,14 @@ X_test_img = X_test[:1,:]
 
 # z = input('pass 5 ?')
 
-# print_('sys.getsizeof(X_data)')
-# print_('sys.getsizeof(y_data)')
-# print_('sys.getsizeof(X_train)')
-# print_('sys.getsizeof(X_valid)')
-# print_('sys.getsizeof(X_test)')
-# print_('sys.getsizeof(X_train_centered)')
-# print_('sys.getsizeof(X_valid_centered)')
-# print_('sys.getsizeof(X_test_centered)')
+print_('sys.getsizeof(X_data)')
+print_('sys.getsizeof(y_data)')
+print_('sys.getsizeof(X_train)')
+print_('sys.getsizeof(X_valid)')
+print_('sys.getsizeof(X_test)')
+print_('sys.getsizeof(X_train_centered)')
+print_('sys.getsizeof(X_valid_centered)')
+print_('sys.getsizeof(X_test_centered)')
 
 del X_data, y_data, X_train, X_valid, X_test
 
@@ -393,8 +393,9 @@ with tf.Session(graph=g2) as sess:
     # print_('activated_node')
 
 
-
-    def activated_nodes(input_node, weights, range=0.5):
+    '''input: input_node(type:np.array, doesn't matter if it's sorted), 
+    weights(doesn't matter if it's sorted) | output: column(or row)(of input_node) number of activated nodes'''
+    def activated_nodes(input_node, weights, FormalRedValue, range=0.5):
         mul = np.dot(input_node, weights)
         # print_('fc_3_result.shape')
         # print_('np.array([fc_4_w[:,7]]).shape')
@@ -404,20 +405,22 @@ with tf.Session(graph=g2) as sess:
         sum_1 = 0
         sum_2 = 0
         check_point = 0
-        for i in list(mul_member[sorted_index]):
+        SortedMulMember = mul_member[sorted_index]
+        for i in list(SortedMulMember):
             if i > 0:
                 sum_1 += i
-        for index, i in enumerate(list(mul_member[sorted_index])):
+        for index, i in enumerate(list(SortedMulMember)):
             if i > 0:
                 sum_2 += i
                 if sum_2 / sum_1 > 0.5:
                     check_point = index
                     break
-        # print('sum_1 :\n', sum_1)
-        # print('sum_2 :\n', sum_2)                
-        # print('check_point : \n', check_point)
+        print('sum_1 :\n', sum_1)
+        print('sum_2 :\n', sum_2)                
+        print('check_point : \n', check_point)
         nodes = sorted_index[np.arange(check_point)]
-        return nodes
+        RedValue = SortedMulMember[np.arange(check_point)]*FormalRedValue/sum_2
+        return nodes, RedValue
     
     # def show(all_nodes, activated_nodes):
     #     '''Show h2 pooling layer's activated pixel'''
@@ -445,176 +448,59 @@ with tf.Session(graph=g2) as sess:
 
     #     plt.show()
 
-    activated_node_fc_3 = activated_nodes(fc_3_result, fc_4_w[:,7])
+    activated_node_fc_3, Fc3RedValue = activated_nodes(fc_3_result, fc_4_w[:,7], 1)
     print_('activated_node_fc_3')
+    print_('Fc3RedValue')
 
     plot_or_not = True
     activated_node_h2_pool_all = np.array([[]])
 
-
-    for num in range(0, 78):
+    for num in range(0, 10):
         
         # z = input('pass 12 ?')
 
         h2_pool_resize = np.resize(h2_pool[0,:,:,:], (1,1024))
-
-        activated_node_h2_pool = \
-            activated_nodes(h2_pool_resize, fc_3_w[:,activated_node_fc_3[num]]) ####
-
+        activated_node_h2_pool, H2poolRedValue = \
+            activated_nodes(h2_pool_resize, fc_3_w[:,activated_node_fc_3[num]], Fc3RedValue[num]) ####
+        print_('activated_node_h2_pool')
+        print_('H2poolRedValue')
+        print_('activated_node_h2_pool_all.shape')
+        print_('activated_node_h2_pool.shape') 
+        '''Collect all Red pixels'''
         activated_node_h2_pool_all = np.c_[activated_node_h2_pool_all, [activated_node_h2_pool]]
 
-    activated_node_h2_pool_all = np.unique(activated_node_h2_pool_all)
-    print_('activated_node_h2_pool_all')
+        if plot_or_not == True:
+            '''Show h2 pooling layer's activated pixel'''   
+            fig, ax_act_h2_pool_1 = plt.subplots(nrows=8, ncols=8, figsize=(5, 5))
+            fig.tight_layout()
+            channels = activated_node_h2_pool%(64*4)%64
+            for i in range(64):
+                h2_pool_tmp = np.array(h2_pool[0,:,:,i])
+                pool_img = np.stack([h2_pool_tmp, h2_pool_tmp, h2_pool_tmp], axis=2)
 
 
-    column = np.array(activated_node_h2_pool_all/(64*4), dtype="i")
-    row = np.array(activated_node_h2_pool_all%(64*4)/64, dtype="i")
-    channels = np.array(activated_node_h2_pool_all%(64*4)%64, dtype="i")
+                '''Make activated pixel red'''        
+                for index, which_channel in enumerate(channels):
+                    if which_channel == i:
+                        row = int(activated_node_h2_pool[index]%(64*4)/64)
+                        # row = int(activated_node_h2_pool_1[index]%16/4)
+                        column = int(activated_node_h2_pool[index]/(64*4))
+                        # column = (activated_node_h2_pool_1[index]%16)%4
+                        print_('row')
+                        print_('column')
+                        pool_img[column, row, 0] = 0
+                        pool_img[column, row, 0] += H2poolRedValue[index]
+                        pool_img[column, row, 1] = 0
+                        pool_img[column, row, 2] = 0
 
-    print_('column')
-    print_('row')
-    print_('channels')
-    activated_node_h2_pool_all_3d = np.stack([column, row, channels], axis=1)
-    print_('activated_node_h2_pool_all_3d')
-    print_('activated_node_h2_pool_all_3d.shape')
-    print_('activated_node_h2_pool_all_3d[:,2]')
-
-    fig, ax_conv2 = plt.subplots(nrows=8, ncols=8, figsize=(15, 15))
-    fig.tight_layout()
-
-    for i in range(64):
-        conv2_tmp = np.array(conv_2_result[0,:,:,i])
-        conv2_img = np.stack([conv2_tmp, conv2_tmp, conv2_tmp], axis=2)
-
-        for index, channel in enumerate(activated_node_h2_pool_all_3d[:,2]):
-            if channel == i:
-                column = activated_node_h2_pool_all_3d[index,0]
-                row = activated_node_h2_pool_all_3d[index,1]
-
-                pixel_4x4 = [float(conv2_tmp[2*column, 2*row]), \
-                            float(conv2_tmp[2*column+1, 2*row]), \
-                            float(conv2_tmp[2*column, 2*row+1]), \
-                            float(conv2_tmp[2*column+1, 2*row+1])]
-                maximum_value = max(pixel_4x4)                           
-                maximum_index = pixel_4x4.index(maximum_value)
-
-                if maximum_index == 0:
-                    column = 2*column
-                    row = 2*row
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
-                elif maximum_index == 1:
-                    column = 2*column+1
-                    row = 2*row
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
-                elif maximum_index == 2:
-                    column = 2*column
-                    row = 2*row+1
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
-                elif maximum_index == 3:
-                    column = 2*column+1
-                    row = 2*row+1
-                    conv2_img[column, row, 0] = 1
-                    conv2_img[column, row, 1] = 0
-                    conv2_img[column, row, 2] = 0
-
-        ax_conv2[int(i/8), int(i%8)].imshow(conv2_img)
-        # save the red points here
-
-    # plt.show()
-    filename = 'conv2_result .png'
-    print(filename, ' saved')
-    plt.savefig(filename)            
-    
-        
-
-
-
-
-
-        # '''Show h2 pooling layer's activated pixel'''  
-        # if plot_or_not == True: 
-        #     fig, ax_act_h2_pool_1 = plt.subplots(nrows=8, ncols=8, figsize=(10, 10))
-        #     fig.tight_layout()
-        
-        # channels = activated_node_h2_pool%(64*4)%64
-        # for i in range(64):
-        #     h2_pool_tmp = np.array(h2_pool[0,:,:,i])
-        #     if plot_or_not == True:
-        #         pool_img = np.stack([h2_pool_tmp, h2_pool_tmp, h2_pool_tmp], axis=2)
-
-
-        #     '''Make activated pixel red'''        
-        #     for index, which_channel in enumerate(channels):
-        #         if which_channel == i:
-        #             row = int(activated_node_h2_pool[index]%(64*4)/64)
-        #             column = int(activated_node_h2_pool[index]/(64*4))
-        #             print_('row')
-        #             print_('column')
-        #             if plot_or_not == True:
-        #                 pool_img[column, row, 0] = 1
-        #                 pool_img[column, row, 1] = 0
-        #                 pool_img[column, row, 2] = 0
-        #     if plot_or_not == True:
-        #         ax_act_h2_pool_1[int(i/8), int(i%8)].imshow(pool_img)
+                ax_act_h2_pool_1[int(i/8), int(i%8)].imshow(pool_img)
             
 
-        # if plot_or_not == True:
-        #     filename = 'act_h2_pool_' + str(num+1) + '.png'
-        #     print(filename, ' saved')
-        #     plt.savefig(filename)
-
-
-
-
-
-
-
-
-
-
-
-
-        # '''Show h2 pooling layer's activated pixel'''  
-        # if plot_or_not == True: 
-        #     fig, ax_act_h2_pool_1 = plt.subplots(nrows=8, ncols=8, figsize=(10, 10))
-        #     fig.tight_layout()
-        
-        # channels = activated_node_h2_pool%(64*4)%64
-        # for i in range(64):
-        #     h2_pool_tmp = np.array(h2_pool[0,:,:,i])
-        #     if plot_or_not == True:
-        #         pool_img = np.stack([h2_pool_tmp, h2_pool_tmp, h2_pool_tmp], axis=2)
-
-
-        #     '''Make activated pixel red'''        
-        #     for index, which_channel in enumerate(channels):
-        #         if which_channel == i:
-        #             row = int(activated_node_h2_pool[index]%(64*4)/64)
-        #             column = int(activated_node_h2_pool[index]/(64*4))
-        #             print_('row')
-        #             print_('column')
-        #             if plot_or_not == True:
-        #                 pool_img[column, row, 0] = 1
-        #                 pool_img[column, row, 1] = 0
-        #                 pool_img[column, row, 2] = 0
-        #     if plot_or_not == True:
-        #         ax_act_h2_pool_1[int(i/8), int(i%8)].imshow(pool_img)
-            
-
-        # if plot_or_not == True:
-        #     filename = 'act_h2_pool_' + str(num+1) + '.png'
-        #     print(filename, ' saved')
-        #     plt.savefig(filename)
-
-
-
-
+        if plot_or_not == True:
+            # filename = 'act_h2_pool_' + str(num+1) + '.png'
+            # print(filename, ' saved')
+            # plt.savefig(filename)
+            plt.show()
 
     # activated_node_h2_pool_all = np.sort(activated_node_h2_pool_all)
     # print_('activated_node_h2_pool_all')

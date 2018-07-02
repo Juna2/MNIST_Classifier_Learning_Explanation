@@ -108,7 +108,8 @@ def build_cnn(norm, lamb):
     h1_pool = tf.nn.max_pool(h1, 
                              ksize=[1, 2, 2, 1],
                              strides=[1, 2, 2, 1], 
-                             padding='SAME')
+                             padding='SAME',
+                             name='h1_pool')
     ## 2n layer: Conv_2
     print('\nBuilding 2nd layer: ')
     h2 = conv_layer(h1_pool, name='conv_2', 
@@ -119,7 +120,8 @@ def build_cnn(norm, lamb):
     h2_pool = tf.nn.max_pool(h2, 
                              ksize=[1, 2, 2, 1],
                              strides=[1, 2, 2, 1], 
-                             padding='SAME')
+                             padding='SAME',
+                             name='h2_pool')
 
     ## 3rd layer: Fully Connected
     print('\nBuilding 3rd layer:')
