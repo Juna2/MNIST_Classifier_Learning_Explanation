@@ -101,11 +101,15 @@ import numpy as np
 # b = a / 0
 # print(b)
 
-def a():
-    b = np.array([1, 2, 3])
-    c = np.array([4, 5, 6])
-    return b, c
+# def a():
+#     b = np.array([1, 2, 3])
+#     c = np.array([4, 5, 6])
+#     return b, c
 
-p, q = a()
+# p, q = a()
 
-print(p, q)
+# print(p, q)
+
+a = 2
+
+print((a==2)+1)

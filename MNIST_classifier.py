@@ -234,7 +234,7 @@ def LoadTrainData(path, kind):
 
     return ImageData, LabelData
 
-def activated_nodes(input_node, weights, bias, FormalRedValue, scope=0.999):
+def activated_nodes(input_node, weights, FormalRedValue, scope=0.999):
     # print_('fc_3_result.shape')
     # print_('np.array([fc_4_w[:,7]]).shape')
     mul_member = input_node * weights 
@@ -298,30 +298,16 @@ def unpooling(RedPixelsBeforeUnpool, ImageAfterUnpool):
                 if maximum_index == 0:
                     column = 2*column
                     row = 2*row
-                    # conv1_img[column, row, 0] = 1
-                    # conv1_img[column, row, 1] = 0
-                    # conv1_img[column, row, 2] = 0
                 elif maximum_index == 1:
                     column = 2*column+1
                     row = 2*row
-                    # conv1_img[column, row, 0] = 1
-                    # conv1_img[column, row, 1] = 0
-                    # conv1_img[column, row, 2] = 0
                 elif maximum_index == 2:
                     column = 2*column
                     row = 2*row+1
-                    # conv1_img[column, row, 0] = 1
-                    # conv1_img[column, row, 1] = 0
-                    # conv1_img[column, row, 2] = 0
                 elif maximum_index == 3:
                     column = 2*column+1
                     row = 2*row+1
-                    # conv1_img[column, row, 0] = 1
-                    # conv1_img[column, row, 1] = 0
-                    # conv1_img[column, row, 2] = 0
 
-                # print_('RedPixelsAfterUnpool.shape')
-                # print_('np.array([[column, row, channel]]).shape')
                 RedPixelsAfterUnpool = \
                             np.c_[RedPixelsAfterUnpool, [[column, row, channel, RedPixelsBeforeUnpool[index,3]]]]
                 
@@ -330,42 +316,12 @@ def unpooling(RedPixelsBeforeUnpool, ImageAfterUnpool):
     RedPixelsAfterUnpool = np.resize(RedPixelsAfterUnpool,(int(RedPixelsAfterUnpool.shape[1]/4), 4))
     # print_('RedPixelsAfterUnpool')
 
-    # plt.show()
-    # filename = 'conv1_result .png'
-    # print(filename, ' saved')
-    # plt.savefig(filename)     
     '''output : RedPixelsAfterUnpool(All red pixel's coord and channel)'''     
     '''================================================================================'''
     print('==================================================================================')    
 
     return RedPixelsAfterUnpool
 
-
-# def CollectRedValues(RedPixelsBeforeCollect, CorrespondingLayer):
-#     '''=========================Collect all same pixels' Red values========================='''
-#     '''input : RedPixelsBeforeCollect(1, ~, 4)(column, row, channel, redvalue), CorrespondingLayer(1, 4, 4, 64)'''
-    
-
-#     np.set_printoptions(threshold=np.inf)
-#     # print_('RedPixelsBeforeCollect.shape')
-#     np.set_printoptions(threshold=1000)
-
-#     TempArray = np.zeros((CorrespondingLayer.shape))
-#     for i in RedPixelsBeforeCollect[0,:,:]:
-#         # print(i)
-#         TempArray[0,int(i[0]),int(i[1]),int(i[2])] += i[3]
-
-#     RedPixelsAfterCollect = np.array([[]])
-#     for i in range(CorrespondingLayer.shape[1]):
-#         for j in range(CorrespondingLayer.shape[2]):
-#             for k in range(CorrespondingLayer.shape[3]):
-#                 if TempArray[0,i,j,k] != 0:
-#                     RedPixelsAfterCollect = np.c_[RedPixelsAfterCollect, np.array([[i,j,k,TempArray[0,i,j,k]]])]
-
-#     RedPixelsAfterCollect = np.resize(RedPixelsAfterCollect, (int(RedPixelsAfterCollect.shape[1]/4), 4))
-
-#     '''output : RedPixelsAfterCollect(far_less_amount_of (column,row,channel,redvalue))'''
-#     return RedPixelsAfterCollect
 
 
 
@@ -406,6 +362,8 @@ def CollectRedValues(RedPixelsBeforeCollect, CorrespondingLayer):
 
 
 
+
+
 def ShowImage(ImageToBeRed, PixelsToBeRed, filename, threshold, RowNumber=8, ColNumber=8):
     '''===================================Show Red Pixels===================================='''
     '''input : image(1, 784) , RowNumber, ColNumber, **threshold**<if i <= 0.1:>
@@ -415,17 +373,18 @@ def ShowImage(ImageToBeRed, PixelsToBeRed, filename, threshold, RowNumber=8, Col
     # fig.tight_layout()
 
     '''Normalizing Red Value(from 0 to 1)'''
-    print_('PixelsToBeRed[:,2].max()')
+    # print_('PixelsToBeRed[:,2].max()')
     PixelsToBeRed_Nor = np.empty_like(PixelsToBeRed)
     np.copyto(PixelsToBeRed_Nor, PixelsToBeRed)
-    PixelsToBeRed_Nor[:,2] = (PixelsToBeRed_Nor[:,2] - PixelsToBeRed_Nor[:,2].min())/ \
-                                    (PixelsToBeRed_Nor[:,2].max() - PixelsToBeRed_Nor[:,2].min())
-    print_('PixelsToBeRed[:,2].max()')
+    RedValueColumn = PixelsToBeRed.shape[1]-1
+    PixelsToBeRed_Nor[:,RedValueColumn] = (PixelsToBeRed_Nor[:,RedValueColumn] - PixelsToBeRed_Nor[:,RedValueColumn].min())/ \
+                                    (PixelsToBeRed_Nor[:,RedValueColumn].max() - PixelsToBeRed_Nor[:,RedValueColumn].min())
+    # print_('PixelsToBeRed[:,2].max()')
 
 
     '''Remove under certain value'''
     remove_list = np.array([[]])
-    for index, i in enumerate(PixelsToBeRed_Nor[:,2]):
+    for index, i in enumerate(PixelsToBeRed_Nor[:,RedValueColumn]):
         if i <= threshold: #@@@@
             remove_list = np.c_[remove_list, [index]]
     PixelsToBeRed_Nor = np.delete(PixelsToBeRed_Nor, remove_list, axis=0)
@@ -444,7 +403,7 @@ def ShowImage(ImageToBeRed, PixelsToBeRed, filename, threshold, RowNumber=8, Col
 
 
     '''image plot'''
-    
+    print('len(ImageToBeRed.shape) : \n', len(ImageToBeRed.shape))    
     if len(ImageToBeRed.shape) == 3:
         ImageToBeRed_ = ImageToBeRed[0,:,:]
         ImageToBeRed_norm = (ImageToBeRed_ - ImageToBeRed_.min()) / (ImageToBeRed_.max() - ImageToBeRed_.min())
@@ -456,6 +415,10 @@ def ShowImage(ImageToBeRed, PixelsToBeRed, filename, threshold, RowNumber=8, Col
             ImageToBePlot[OnePixelToBeRed[0].astype(int), OnePixelToBeRed[1].astype(int),0] = OnePixelToBeRed[2]
             ImageToBePlot[OnePixelToBeRed[0].astype(int), OnePixelToBeRed[1].astype(int),1] = 0
             ImageToBePlot[OnePixelToBeRed[0].astype(int), OnePixelToBeRed[1].astype(int),2] = 0
+        
+        plt.imshow(ImageToBePlot)
+        plt.show()
+
 
     elif len(ImageToBeRed.shape) == 4:
         fig, ax_ImageToBeRed = plt.subplots(nrows=RowNumber, ncols=ColNumber, figsize=(5, 5))
@@ -471,11 +434,11 @@ def ShowImage(ImageToBeRed, PixelsToBeRed, filename, threshold, RowNumber=8, Col
                     ImageToBePlot[OnePixelToBeRed[0].astype(int), OnePixelToBeRed[1].astype(int),2] = 0
             
             ax_ImageToBeRed[int(i/8), int(i%8)].imshow(ImageToBePlot)
+        plt.show()
 
 
-    plt.imshow(ImageToBePlot)
-    plt.show()
-    plt.imshow(ImageToBePlot)
+    # plt.show()
+    # plt.imshow(ImageToBePlot)
     # filename = 'Final_image_No1_0.20 .png'
     print(filename, ' saved')
     plt.savefig(filename)     
@@ -483,3 +446,93 @@ def ShowImage(ImageToBeRed, PixelsToBeRed, filename, threshold, RowNumber=8, Col
     '''output : showing images'''
     '''====================================================================================='''
 
+
+def Deconvolution(RedPixelsBeforeDeconv, kernel, ImageAfterDeconv, scope=0.999):
+    '''===================================image <- conv1===================================='''
+    '''input : image(1, 784), kernel(5, 5, 1, 32), 
+                                    RedPixelsBeforeDeconv(3919, 4)(column, row, channel, redvalue)'''
+    print('===================================image <- conv1====================================')
+    RedPixelsAfterDeconv = np.array([[]])
+
+
+    ImageAfterDeconv_resize = ImageAfterDeconv[0,:,:]
+    # print_('image')
+    for i in range(kernel.shape[3]): 
+        for index, channel in enumerate(np.array(RedPixelsBeforeDeconv[:,2], dtype="i")):
+            if channel == i:
+                StartPointOfCutting = RedPixelsBeforeDeconv[index,:]
+                CuttedPart = ImageAfterDeconv_resize[int(StartPointOfCutting[0]):int(StartPointOfCutting[0])+4,\
+                                                     int(StartPointOfCutting[1]):int(StartPointOfCutting[1])+4]
+                kernel_ = kernel[:,:,:,i]
+                
+                length = kernel_.shape[0] * kernel_.shape[1] * kernel_.shape[2]
+                CuttedPart1D = np.resize(CuttedPart, (1,length))
+                kernel_1D = np.resize(kernel_, (1,length))
+                
+                RedPixelsPointsAfterDeconv1D, RedValueAfterDeconv = \
+                    activated_nodes(CuttedPart1D, kernel_1D, StartPointOfCutting[3])
+                # print_('RedPixelsPointsAfterDeconv1D.shape')
+
+                # RedPixelsPointsFromH2pool, H2poolRedValue = \
+                #                     activated_nodes(h2_pool_resize, fc_3_w[:,PixelsToBeRedFc3[num]], Fc3RedValue[num]) ####
+                # AllRedPixelsPointsFromH2pool = np.c_[AllRedPixelsPointsFromH2pool, [RedPixelsPointsFromH2pool]]
+                # AllH2poolRedValue = np.c_[AllH2poolRedValue, [H2poolRedValue]]
+
+                if kernel_.shape[2] == 1:
+                    for index, RedPixelPoint1D in enumerate(RedPixelsPointsAfterDeconv1D):
+                        RedPixelPointcolumn = StartPointOfCutting[0]+RedPixelPoint1D%kernel_.shape[0]
+                        RedPixelPointrow = StartPointOfCutting[1]+int(RedPixelPoint1D/kernel_.shape[0])
+                        RedPixelsAfterDeconv = np.c_[RedPixelsAfterDeconv, \
+                                        [[RedPixelPointcolumn,RedPixelPointrow,RedValueAfterDeconv[index]]]]
+                else:
+                    for index, RedPixelPoint1D in enumerate(RedPixelsPointsAfterDeconv1D):
+                        RedPixelPointcolumn = StartPointOfCutting[0]+int(RedPixelPoint1D/(kernel_.shape[2]*kernel_.shape[1]))
+                        RedPixelPointrow = StartPointOfCutting[1]+int(RedPixelPoint1D%(kernel_.shape[2]*kernel_.shape[1])/kernel_.shape[2])
+                        RedPixelPointChannel = RedPixelPoint1D%(kernel_.shape[2]*kernel_.shape[1])%kernel_.shape[2]
+                        RedPixelsAfterDeconv = np.c_[RedPixelsAfterDeconv, \
+                                        [[RedPixelPointcolumn,RedPixelPointrow,RedPixelPointChannel,RedValueAfterDeconv[index]]]]
+    # print_('PixelsToBeRed.shape[1]')
+    RedPixelsAfterDeconv = np.resize(RedPixelsAfterDeconv, (1,\
+                            int(RedPixelsAfterDeconv.shape[1]/(RedPixelsBeforeDeconv.shape[1]-(kernel_.shape[2]==1))),\
+                                                            RedPixelsBeforeDeconv.shape[1]-(kernel_.shape[2]==1)))
+    # print_('RedPixelsAfterDeconv')
+
+    return RedPixelsAfterDeconv
+    '''output : showing images, RedPixelsAfterDeconv(All red pixel's coord and channel)'''
+    '''=================================================================================='''
+    print('==================================================================================')
+
+
+
+def Fcl2PoolingLayer(RedNodesInFcl, FclWeights, PoolingLayer, RedValue):
+    '''============================h2_pool <- fc3============================'''
+    '''input : PoolingLayer(1, 4, 4, 64), RedNodesInFcl(210,), FclWeights(1024, 1024), RedValue'''
+    print('============================h2_pool <- fc3============================')
+    AllRedPixelsInPoolingLayer = np.array([[]])
+    AllRedValueInPoolingLayer = np.array([[]])
+    PoolingLayer_resize = np.resize(PoolingLayer[0,:,:,:], (1,1024))
+
+    for num in range(RedNodesInFcl.shape[0]):
+        RedPixelsPointsInPoolingLayer, RedValueInPoolingLayer = \
+                activated_nodes(PoolingLayer_resize, FclWeights[:,RedNodesInFcl[num]], RedValue[num]) ####
+        AllRedPixelsInPoolingLayer = np.c_[AllRedPixelsInPoolingLayer, [RedPixelsPointsInPoolingLayer]]
+        AllRedValueInPoolingLayer = np.c_[AllRedValueInPoolingLayer, [RedValueInPoolingLayer]]
+
+
+    np.set_printoptions(threshold=np.inf)
+    # print_('AllRedPixelsInPoolingLayer')
+    # print_('PoolingLayer_resize[0,AllRedPixelsInPoolingLayer[0,:].astype(int)]') # (1, 55923)
+
+    np.set_printoptions(threshold=1000)
+
+
+    columns = np.array(AllRedPixelsInPoolingLayer/(64*4), dtype="i")
+    rows = np.array(AllRedPixelsInPoolingLayer%(64*4)/64, dtype="i")
+    channels = np.array(AllRedPixelsInPoolingLayer%(64*4)%64, dtype="i")
+
+    RedPixelsInPoolingLayer = np.stack([columns, rows, channels, AllRedValueInPoolingLayer], axis=2)
+    
+    return RedPixelsInPoolingLayer
+    '''output : RedPixelsInPoolingLayer(All red pixels' coord and channel)'''
+    '''======================================================================='''
+    print('=========================================================================')
