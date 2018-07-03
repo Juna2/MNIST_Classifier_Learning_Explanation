@@ -82,17 +82,21 @@ import numpy as np
 
 # print(act_node_conv2_all)
 
-a = np.array([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]])
-a = np.resize(a, (3,3))
-a_img = np.stack([a, a, a], axis=2)
-a_img[1,1,0] = 0.2
-a_img[1,1,1] = 0
-a_img[1,1,2] = 0
-plt.imshow(a_img)
-plt.show()
+# a = np.array([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]])
+# a = np.resize(a, (3,3))
+# a_img = np.stack([a, a, a], axis=2)
+# a_img[1,1,0] = 0.2
+# a_img[1,1,1] = 0
+# a_img[1,1,2] = 0
+# plt.imshow(a_img)
+# plt.show()
 # print(a-1)
 
 # a = np.array([[0.112345678, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]], dtype="i")
 # a = np.c_[a, [[1, 2, 3, 4, 5.0]]]
 # a = np.resize(a, (2,7))
 # print(a)
+
+a = np.array([1, 2, 3, 4, 5, 6])
+b = a / 0
+print(b)
