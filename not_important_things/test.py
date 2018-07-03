@@ -97,6 +97,15 @@ import numpy as np
 # a = np.resize(a, (2,7))
 # print(a)
 
-a = np.array([1, 2, 3, 4, 5, 6])
-b = a / 0
-print(b)
+# a = np.array([1, 2, 3, 4, 5, 6])
+# b = a / 0
+# print(b)
+
+def a():
+    b = np.array([1, 2, 3])
+    c = np.array([4, 5, 6])
+    return b, c
+
+p, q = a()
+
+print(p, q)
