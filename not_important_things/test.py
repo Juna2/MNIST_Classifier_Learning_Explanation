@@ -110,6 +110,10 @@ import numpy as np
 
 # print(p, q)
 
-a = 2
-
-print((a==2)+1)
+a = 3.4
+b = "%0.4f" %a
+print(b)
+# print(b.shape)
+# for i in range(2):
+#  b = np.r_[b,a]
+# print(b)
