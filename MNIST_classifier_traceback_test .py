@@ -110,5 +110,5 @@ with tf.Session(graph=g2) as sess:
         threshold = [i*0.05 + StartThreshold for i in range(NumberOfImage)]
         for j in threshold:
             correct, probabilities = TraceBack([i], [y_test[index]], TestNumber[index], \
-                                            index, j, ShowNotSave=True)
+                                            index, j, ShowNotSave=False)
             print('correct? :\n', correct[0], '\nprobabilities :\n', probabilities, '\n\n')
