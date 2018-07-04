@@ -2,11 +2,9 @@
 
 This project is for finding out the feature which decides the final classification.
 
-I intended to make this project for efficient image segmentation.
-But I guess this MNIST dataset is not sufficient for implementing segmentation with this approach.
-
-But still I could get meaningful result.
 The red pixels that last for a long time in the video are brighter which means they more contribute to being classified as a certain number.
+
+As you can see in No.5 image the bright red pixels are placed in the area, where white pixels are placed in No.8 and No.9, so that it can easily seperate 5 from similar numbers like 8 and 9.
 
 
 ## Video Link
