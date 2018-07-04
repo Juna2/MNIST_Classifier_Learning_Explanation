@@ -12,7 +12,7 @@ The red pixels that last for a long time in the video are brighter which means t
 [![Test Result](./result/5/No.5_0.50_True_1.00.png)](https://youtu.be/riGnxcfSY2c)
 
 
-![No.0](./result/0/No.0_1.10_True_1.00.png)
+![No.0](./result/0/No.0_1.10_True_1.00.png,"No.0")
 ![No.0](./result/0/No.0_0.55_True_1.00.png)
 ![No.1](./result/1/No.1_1.10_True_1.00.png)
 ![No.1](./result/1/No.1_0.50_True_1.00.png)
